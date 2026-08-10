@@ -94,6 +94,7 @@ export default function Room({ me, room, showToast }) {
             {room.players.map((p) => (
               <li key={p.id} className={p.connected ? '' : 'offline'}>
                 <span className="player-name">
+                  <span className="avatar">{(p.name || '?').charAt(0).toUpperCase()}</span>
                   {p.name} {p.isHost && <span className="chip">host</span>}
                   {p.id === room.you && <span className="chip you">you</span>}
                 </span>

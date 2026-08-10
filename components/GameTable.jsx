@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import CardView from './CardView';
 import { nameOf, RANK_LABELS } from './helpers';
 import { generateCombos } from '@/lib/game/bot';
@@ -40,9 +40,42 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     3: ['seat-right', 'seat-top', 'seat-left'],
   }[others.length] || [];
 
-  const toggleCard = (id) => {
-    setSelected((sel) => (sel.includes(id) ? sel.filter((c) => c !== id) : [...sel, id]));
+  // Drag-select: press a card and slide across others to select (or
+  // deselect, if the first card was already selected) them in one motion.
+  const dragMode = useRef(null); // 'add' | 'remove' | null
+
+  const applyDrag = (id) => {
+    const mode = dragMode.current;
+    if (!mode || !id) return;
+    setSelected((sel) => {
+      const has = sel.includes(id);
+      if (mode === 'add' && !has) return [...sel, id];
+      if (mode === 'remove' && has) return sel.filter((c) => c !== id);
+      return sel;
+    });
   };
+
+  const beginDrag = (id) => {
+    dragMode.current = selected.includes(id) ? 'remove' : 'add';
+    applyDrag(id);
+  };
+
+  const onHandPointerMove = (e) => {
+    if (!dragMode.current) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const cardEl = el?.closest?.('[data-card-id]');
+    if (cardEl) applyDrag(cardEl.dataset.cardId);
+  };
+
+  useEffect(() => {
+    const endDrag = () => { dragMode.current = null; };
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    return () => {
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+    };
+  }, []);
 
   // The state over the wire only carries the table's cards — rebuild the
   // full combo (with its strength) locally before any beats() comparison.
@@ -163,14 +196,14 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
           {room.players[youIdx]?.passed && <span className="chip pass">passed</span>}
         </div>
 
-        <div className="hand">
+        <div className="hand" onPointerMove={onHandPointerMove}>
           {room.yourHand.map((c) => (
             <CardView
               key={c.id}
               card={c}
               selected={selected.includes(c.id)}
               hinted={playableIds ? playableIds.has(c.id) : false}
-              onClick={() => toggleCard(c.id)}
+              onPointerDown={() => beginDrag(c.id)}
             />
           ))}
           {room.yourHand.length === 0 && <div className="muted">You finished! Waiting for the round to end…</div>}
@@ -198,15 +231,18 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
 function OpponentSeat({ player, seatClass, isTurn }) {
   return (
     <div className={`seat ${seatClass} ${isTurn ? 'active' : ''} ${player.connected ? '' : 'offline'}`}>
-      <div className="seat-name">
-        {player.name}
-        {!player.connected && ' (offline)'}
-      </div>
-      <div className="seat-info">
-        {player.finishedRank
-          ? <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
-          : <span className="card-back-count">🂠 {player.cardCount}</span>}
-        {player.passed && <span className="chip pass">passed</span>}
+      <div className="seat-avatar">{(player.name || '?').charAt(0).toUpperCase()}</div>
+      <div className="seat-body">
+        <div className="seat-name">
+          {player.name}
+          {!player.connected && ' (offline)'}
+        </div>
+        <div className="seat-info">
+          {player.finishedRank
+            ? <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
+            : <span className="card-back-count">🂠 {player.cardCount}</span>}
+          {player.passed && <span className="chip pass">passed</span>}
+        </div>
       </div>
     </div>
   );
