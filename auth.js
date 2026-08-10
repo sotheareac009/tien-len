@@ -2,11 +2,17 @@ import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 
 // Credentials come from AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET in .env.
+// AUTH_URL must be the public https origin — server.js checks it at boot,
+// because Auth.js builds the OAuth redirect_uri from it and Google rejects
+// anything that is not a real public address.
 // Sessions are stateless JWTs, which lets the Socket.IO server verify a
 // player's identity straight from the session cookie (see lib/auth-socket.js).
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],
   session: { strategy: 'jwt' },
+  // AUTH_URL above is the source of truth for the origin; trusting the host
+  // header lets Auth.js serve the same app on localhost during development.
+  trustHost: true,
   callbacks: {
     async jwt({ token, profile, account }) {
       // Pin the identity to Google's own account id. Without an adapter

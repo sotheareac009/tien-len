@@ -3,10 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "PORT=3080 node server.js",
+    "dev": "PORT=8090 node server.js",
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "lint": "next lint"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",

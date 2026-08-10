@@ -22,13 +22,13 @@ Real-time multiplayer Tien Len (Tiến Lên / ទាញឡេន) built with **N
 ```bash
 npm install
 cp .env.example .env   # then fill in your Google OAuth credentials
-npm run dev            # http://localhost:3080
+npm run dev            # http://localhost:8090
 ```
 
 ### Google sign-in setup
 
 1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials) create an **OAuth 2.0 Client ID** (type: Web application).
-2. Add an **Authorized redirect URI**: `http://localhost:3080/api/auth/callback/google` (and the same path on your deployed domain).
+2. Add an **Authorized redirect URI**: `http://localhost:8090/api/auth/callback/google` (and the same path on your deployed domain).
 3. Put the client ID/secret in `.env` as `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`, and generate `AUTH_SECRET` with `openssl rand -base64 32`.
 4. `AUTH_URL` must match the origin you serve from, or the callback will be rejected.
 
@@ -61,6 +61,9 @@ npm start
 ```
 
 Open the URL in multiple browser windows (or share your LAN/deployed URL) to play together.
+
+To put it online, see [DEPLOY.md](DEPLOY.md) — Hostinger Cloud Startup (and the
+WebSocket caveat that comes with it), or a VPS.
 
 ## How it works
 

@@ -61,6 +61,9 @@ export default function Room({ me, room, showToast }) {
     return () => clearInterval(t);
   }, [socket, room.status]);
 
+  const saveRoom = () =>
+    socket.emit('room:save', {}, (res) => res?.error && showToast(res.error));
+
   if (room.status === 'playing') {
     return (
       <>
@@ -70,6 +73,17 @@ export default function Room({ me, room, showToast }) {
           showToast={showToast}
           onPlay={(cardIds) => socket.emit('game:play', { cardIds })}
           onPass={() => socket.emit('game:pass')}
+          headerRight={
+            // The host can save mid-round: the hand itself is stored, so a
+            // server restart resumes this deal rather than losing it.
+            isHost ? (
+              <button className="btn tiny" onClick={saveRoom} disabled={room.saved}>
+                {room.saved ? 'Saved ✓' : '💾 Save game'}
+              </button>
+            ) : room.saved ? (
+              <span className="chip">saved</span>
+            ) : null
+          }
         />
         <BombBanner event={bombEvent} />
       </>
@@ -218,11 +232,7 @@ export default function Room({ me, room, showToast }) {
         </button>
         {isHost && (
           <>
-            <button
-              className="btn"
-              disabled={room.saved}
-              onClick={() => socket.emit('room:save', {}, (res) => res?.error && showToast(res.error))}
-            >
+            <button className="btn" disabled={room.saved} onClick={saveRoom}>
               {room.saved ? 'Room saved ✓' : 'Save room'}
             </button>
             <button
