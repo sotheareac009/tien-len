@@ -1,4 +1,5 @@
 import { Outfit } from 'next/font/google';
+import Providers from '@/components/Providers';
 import './globals.css';
 
 const outfit = Outfit({
@@ -9,13 +10,15 @@ const outfit = Outfit({
 
 export const metadata = {
   title: 'Tien Len — Online Card Game',
-  description: 'Real-time multiplayer Tien Len with KHQR payouts per round',
+  description: 'Real-time multiplayer Tien Len played for points bought with KHQR',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={outfit.variable}>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

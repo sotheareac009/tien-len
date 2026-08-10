@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { customAlphabet } from 'nanoid';
+import { uploadQRImage } from '@/lib/db';
 
 const idGen = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12);
 
@@ -25,9 +26,15 @@ export async function POST(req) {
     return Response.json({ error: 'Image too large (max 5MB)' }, { status: 400 });
   }
   const buffer = Buffer.from(await file.arrayBuffer());
+  const filename = `${idGen()}${ext}`;
+
+  // Prefer Supabase Storage so QR images survive a redeploy; fall back to the
+  // local uploads folder when Supabase is not configured.
+  const hosted = await uploadQRImage(filename, buffer, file.type);
+  if (hosted) return Response.json({ url: hosted });
+
   const dir = path.join(process.cwd(), 'public', 'uploads');
   await mkdir(dir, { recursive: true });
-  const filename = `${idGen()}${ext}`;
   await writeFile(path.join(dir, filename), buffer);
   return Response.json({ url: `/uploads/${filename}` });
 }

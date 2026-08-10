@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import CardView from './CardView';
+import Avatar from './Avatar';
 import { nameOf, RANK_LABELS } from './helpers';
 import { generateCombos } from '@/lib/game/bot';
 import { beats, detectCombo } from '@/lib/game/combos';
@@ -39,6 +40,30 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     2: ['seat-right', 'seat-left'],
     3: ['seat-right', 'seat-top', 'seat-left'],
   }[others.length] || [];
+
+  // Where each player sits, so a played combo can fly in from their side.
+  const dirOf = (playerId) => {
+    if (playerId === room.you) return 'bottom';
+    const idx = others.findIndex((p) => p.id === playerId);
+    if (idx === -1) return 'top';
+    return seatMap[idx]?.replace('seat-', '') || 'top';
+  };
+
+  // Replay the fly-in whenever the combo on the table changes, and flash
+  // the seat of whoever played it so everyone can see who moved.
+  const tableSig = room.table ? room.table.cards.map((c) => c.id).join(',') : '';
+  const [playAnim, setPlayAnim] = useState({ key: 0, dir: 'bottom', playerId: null });
+  useEffect(() => {
+    if (!room.table) {
+      // Trick ended — drop the highlight so it can't stick on a seat.
+      setPlayAnim((a) => (a.playerId ? { ...a, playerId: null } : a));
+      return;
+    }
+    setPlayAnim({ key: Date.now(), dir: dirOf(room.table.playerId), playerId: room.table.playerId });
+    const t = setTimeout(() => setPlayAnim((a) => ({ ...a, playerId: null })), 1300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableSig]);
 
   // Drag-select: press a card and slide across others to select (or
   // deselect, if the first card was already selected) them in one motion.
@@ -133,6 +158,15 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTurn, room.currentTurnId]);
 
+  // Announce your turn with a short banner so it's impossible to miss.
+  const [turnFlash, setTurnFlash] = useState(0);
+  const hadTurn = useRef(false);
+  useEffect(() => {
+    const mine = myTurn && room.yourHand.length > 0;
+    if (mine && !hadTurn.current) setTurnFlash(Date.now());
+    hadTurn.current = mine;
+  }, [myTurn, room.yourHand.length]);
+
   const suggest = () => {
     const suggestion = computeSuggestion();
     if (!suggestion) return showToast('Nothing can beat this — pass');
@@ -151,7 +185,12 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   };
 
   return (
-    <div className="game-screen">
+    <div className={`game-screen ${myTurn ? 'my-turn' : ''}`}>
+      {turnFlash > 0 && (
+        <div key={turnFlash} className="turn-flash">
+          <span>{mustLead ? 'Your turn — you lead' : 'Your turn!'}</span>
+        </div>
+      )}
       <header className="game-header">
         <span className="room-code">
           {room.code ? <>Room <strong>{room.code}</strong></> : title || 'Tien Len'}
@@ -166,18 +205,27 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
 
       <div className="table-felt">
         {others.map((p, i) => (
-          <OpponentSeat key={p.id} player={p} seatClass={seatMap[i]} isTurn={room.currentTurnId === p.id} />
+          <OpponentSeat
+            key={p.id}
+            player={p}
+            seatClass={seatMap[i]}
+            isTurn={room.currentTurnId === p.id}
+            justPlayed={playAnim.playerId === p.id}
+          />
         ))}
 
         <div className="table-center">
           {room.table ? (
             <>
-              <div className="table-combo">
+              <div
+                key={playAnim.key}
+                className={`table-combo fly-${playAnim.dir} ${room.table.cards.length >= 6 ? 'dense' : ''}`}
+              >
                 {room.table.cards.map((c) => (
                   <CardView key={c.id} card={c} small />
                 ))}
               </div>
-              <div className="table-label">
+              <div key={`lbl-${playAnim.key}`} className="table-label pop">
                 {COMBO_LABELS[room.table.type] || room.table.type} by {nameOf(room, room.table.playerId)}
               </div>
             </>
@@ -228,10 +276,12 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   );
 }
 
-function OpponentSeat({ player, seatClass, isTurn }) {
+function OpponentSeat({ player, seatClass, isTurn, justPlayed }) {
   return (
-    <div className={`seat ${seatClass} ${isTurn ? 'active' : ''} ${player.connected ? '' : 'offline'}`}>
-      <div className="seat-avatar">{(player.name || '?').charAt(0).toUpperCase()}</div>
+    <div
+      className={`seat ${seatClass} ${isTurn ? 'active' : ''} ${justPlayed ? 'just-played' : ''} ${player.connected ? '' : 'offline'}`}
+    >
+      <Avatar name={player.name} image={player.image} className="seat-avatar" />
       <div className="seat-body">
         <div className="seat-name">
           {player.name}

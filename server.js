@@ -1,9 +1,14 @@
 // Custom Next.js server with Socket.IO attached — one process serves both
 // the web app and the real-time game.
 import { createServer } from 'http';
+import nextEnv from '@next/env';
 import next from 'next';
 import { Server } from 'socket.io';
 import { attachGameServer } from './lib/socket-server.js';
+
+// Load .env before anything reads process.env (the socket layer needs
+// AUTH_SECRET to verify session cookies). @next/env is CommonJS.
+nextEnv.loadEnvConfig(process.cwd());
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = parseInt(process.env.PORT || '3000', 10);

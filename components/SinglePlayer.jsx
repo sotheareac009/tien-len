@@ -12,7 +12,7 @@ const BOT_NAMES = ['Bot Dara', 'Bot Sok', 'Bot Srey'];
 const COINS_KEY = 'tienlen-coins';
 const START_COINS = 1000;
 const REFILL = 1000;
-const BOT_DELAY_MS = 700;
+const BOT_DELAY_MS = 1000;
 
 const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
 
@@ -20,6 +20,11 @@ const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
 // engine as online play — no server, no KHQR, just app coins.
 export default function SinglePlayer({ me, onExit, showToast }) {
   const [balance, setBalance] = useState(START_COINS);
+  // Where the balance lives: 'db' for signed-in players (kept on their
+  // account, so it follows them across devices), 'local' for guests.
+  // null while we are still finding out.
+  const [store, setStore] = useState(null);
+  const storeRef = useRef(null);
   const [bets, setBets] = useState({ w1: 100, w2: 50, bomb: 100, catch2: 50 });
   const [numBots, setNumBots] = useState(3);
   const [practiceMode, setPracticeMode] = useState('none'); // none | bombs | counter
@@ -36,18 +41,62 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   const bombTimer = useRef(null);
   const catchTimer = useRef(null);
 
+  const useStore = (kind) => {
+    storeRef.current = kind;
+    setStore(kind);
+  };
+
   useEffect(() => {
-    const saved = Number(localStorage.getItem(COINS_KEY));
-    if (Number.isFinite(saved) && saved >= 0) setBalance(saved);
-    else localStorage.setItem(COINS_KEY, String(START_COINS));
+    let cancelled = false;
+    const fromLocal = () => {
+      const saved = Number(localStorage.getItem(COINS_KEY));
+      if (Number.isFinite(saved) && saved >= 0) setBalance(saved);
+      else localStorage.setItem(COINS_KEY, String(START_COINS));
+      useStore('local');
+    };
+    (async () => {
+      try {
+        // 401 = guest (or persistence switched off) — fall back to the browser.
+        const res = await fetch('/api/coins');
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          setBalance(data.coins);
+          useStore('db');
+          return;
+        }
+      } catch {
+        // Offline or server error — the local balance still lets them play.
+      }
+      if (!cancelled) fromLocal();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setCoins = (fn) => {
+  // Every balance change is a delta (a round's win/loss, or a free top-up).
+  // Sending the delta rather than the total lets Postgres do the arithmetic,
+  // so two open tabs can't overwrite each other's result.
+  const adjustCoins = (delta) => {
     setBalance((b) => {
-      const next = fn(b);
-      localStorage.setItem(COINS_KEY, String(next));
+      const next = Math.max(0, b + delta);
+      if (storeRef.current === 'local') localStorage.setItem(COINS_KEY, String(next));
       return next;
     });
+    if (storeRef.current !== 'db' || delta === 0) return;
+    fetch('/api/coins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta: Math.trunc(delta) }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      // The stored total is authoritative — adopt it in case a write was lost.
+      .then((data) => {
+        if (typeof data?.coins === 'number') setBalance(data.coins);
+      })
+      .catch(() => showToast('Could not save your coins — check your connection'));
   };
 
   const rerender = () => setTick((t) => t + 1);
@@ -57,8 +106,10 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   const players = numBots + 1;
   const maxLoss = players === 3 ? bets.w1 + bets.w2 : bets.w1;
   const canAfford = balance >= maxLoss;
+  const ready = store !== null; // balance loaded — don't deal against a guess
 
   const startRound = () => {
+    if (!ready) return;
     if (!canAfford) return showToast('Not enough coins for these stakes');
     const ids = [YOU, ...BOT_NAMES.slice(0, numBots).map((_, i) => `bot${i}`)];
     namesRef.current = { [YOU]: me.name };
@@ -108,7 +159,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       deltas[catchPay.to] += catchPay.amount;
     }
     for (const id of ranks) tallyRef.current[id] += deltas[id];
-    setCoins((b) => b + deltas[YOU]);
+    adjustCoins(deltas[YOU]);
     setResult({ ranks, deltas, bombs: [...bombsRef.current], catch: catchPay || null });
     setCatchInfo(null);
     setPhase('result');
@@ -225,7 +276,6 @@ export default function SinglePlayer({ me, onExit, showToast }) {
           id,
           name: namesRef.current[id],
           connected: true,
-          hasQR: true,
           isHost: id === YOU,
           cardCount: g.hand(id).length,
           finishedRank: rankIdx === -1 ? null : rankIdx + 1,
@@ -247,7 +297,14 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         <div className="panel">
           <h1 className="logo">🎮 Single Player</h1>
           <p className="muted">Play vs bots — free, with app coins</p>
-          <div className="coins-badge">{coins(balance)}</div>
+          <div className="coins-badge">{ready ? coins(balance) : '… 🪙'}</div>
+          {ready && (
+            <p className="hint">
+              {store === 'db'
+                ? 'Saved to your Google account — your coins follow you to any device.'
+                : 'Saved in this browser. Sign in with Google to keep your coins.'}
+            </p>
+          )}
           <div className="settings" style={{ textAlign: 'left' }}>
             <label>
               Winner 1 prize (coins)
@@ -301,11 +358,11 @@ export default function SinglePlayer({ me, onExit, showToast }) {
             </p>
           </div>
           <div className="stack">
-            <button className="btn primary big" onClick={startRound} disabled={!canAfford}>
-              {canAfford ? 'Deal cards' : `Need ${coins(maxLoss)} to play`}
+            <button className="btn primary big" onClick={startRound} disabled={!ready || !canAfford}>
+              {!ready ? 'Loading coins…' : canAfford ? 'Deal cards' : `Need ${coins(maxLoss)} to play`}
             </button>
-            {!canAfford && (
-              <button className="btn" onClick={() => setCoins((b) => b + REFILL)}>
+            {ready && !canAfford && (
+              <button className="btn" onClick={() => adjustCoins(REFILL)}>
                 Get {coins(REFILL)} free
               </button>
             )}
@@ -408,7 +465,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
                 {canAfford ? 'Play again' : `Need ${coins(maxLoss)} to play`}
               </button>
               {!canAfford && (
-                <button className="btn" onClick={() => setCoins((b) => b + REFILL)}>
+                <button className="btn" onClick={() => adjustCoins(REFILL)}>
                   Get {coins(REFILL)} free
                 </button>
               )}

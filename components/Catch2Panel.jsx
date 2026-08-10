@@ -1,7 +1,8 @@
 'use client';
 
 import { getSocket } from '@/lib/socket-client';
-import { money, nameOf } from './helpers';
+import { nameOf } from './helpers';
+import { formatBoth } from '@/lib/points';
 
 // Catch-the-2 gamble, offered to the last winner after the round ends:
 // guess that the loser is still holding a 2. Right → the loser pays the
@@ -10,7 +11,7 @@ export default function Catch2Panel({ room }) {
   const socket = getSocket();
   const { catcherId, loserId, loserCardCount, price } = room.catch2;
   const iAmCatcher = catcherId === room.you;
-  const priceText = money(price, room.settings.currency);
+  const priceText = formatBoth(price);
 
   return (
     <div className="payment-overlay">
