@@ -287,12 +287,12 @@ function OpponentSeat({ player, seatClass, isTurn, justPlayed }) {
           {player.name}
           {!player.connected && ' (offline)'}
         </div>
-        <div className="seat-info">
+        {/* <div className="seat-info">
           {player.finishedRank
             ? <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
             : <span className="card-back-count">🂠 {player.cardCount}</span>}
           {player.passed && <span className="chip pass">passed</span>}
-        </div>
+        </div> */}
       </div>
     </div>
   );
