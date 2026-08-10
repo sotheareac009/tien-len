@@ -1,0 +1,19 @@
+{
+  "name": "tien-len-game",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "PORT=3080 node server.js",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.js",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "nanoid": "^5.0.9",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  }
+}
