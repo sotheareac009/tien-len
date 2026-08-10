@@ -31,12 +31,19 @@ bypasses row-level security.
 
 ### 2. hPanel → Websites → Node.js app
 
-- **Framework**: `Other` (this app runs its own `server.js`, not `next start`)
-- **Entry file**: `server.js`
 - **Build command**: `npm run build`
 - **Output directory**: `.next`
 - **Node version**: 20.x or newer
 - **Source**: your GitHub repository
+
+Either framework preset works. Hostinger's Node.js apps run `next start`, which
+never executes `server.js` — so the game server also knows how to attach itself
+from inside the app, via `pages/api/socket.js`. The client pings that route
+before opening its socket, so nothing extra is needed.
+
+If the panel does let you set a custom entry file, `server.js` with framework
+`Other` is the tidier setup: the game server starts at boot instead of on the
+first visit. Both are supported and the code picks whichever ran first.
 
 ### 3. Environment variables
 

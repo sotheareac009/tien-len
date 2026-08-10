@@ -63,6 +63,9 @@ app.prepare().then(() => {
     pingInterval: 20000,
   });
   attachGameServer(io);
+  // Claim the server so pages/api/socket.js (the fallback for hosts that only
+  // run `next start`) sees the game server is already running and stands down.
+  httpServer.io = io;
 
   httpServer.listen(port, host, () => {
     console.log(`> Tien Len ready on http://${host}:${port}`);
