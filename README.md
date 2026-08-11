@@ -86,6 +86,7 @@ WebSocket caveat that comes with it), or a VPS.
 - Holder of the lowest dealt card leads the round and must include it in the first play.
 - A play must match the type and size of the combo on the table and be higher.
 - Bombs (house rules): a single 2 is beaten only by a quad or a 5-card straight flush (5+ consecutive cards in one suit); a pair of 2s is beaten only by a 4-pair double sequence; a quad is beaten by a 4-pair double sequence or a straight flush. Double sequences never chop a single 2, and 2- and 3-pair double sequences are not bombs at all. Chopping pays the configurable bomb bonus, with an escalating chain: chopping a 2 pays ×1, chopping a quad/bomb pays ×2, and each counter-chop (e.g. a higher straight flush over a chopping straight flush) doubles the previous profit (×4, ×8, …). The chain resets when the trick ends.
+- **Stuck on 13 (thối 13 lá)**: if the winner goes out while anyone still holds all 13 cards, the round ends immediately — nobody else places. Each player caught on a full hand pays the winner **double the Winner 1 prize**, and nothing else settles that round. With a 300 prize and three players stuck, the winner collects 1,800.
 - When everyone else passes, the trick winner leads a fresh trick.
 - Play continues until only one player has cards, producing a full 1st→last ranking.
 

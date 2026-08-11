@@ -12,6 +12,8 @@ const BOT_NAMES = ['Bot Dara', 'Bot Sok', 'Bot Srey'];
 const COINS_KEY = 'tienlen-coins';
 const START_COINS = 1000;
 const REFILL = 1000;
+// Caught holding all 13 cards costs double the Winner 1 prize.
+const STUCK_MULTIPLIER = 2;
 const BOT_DELAY_MS = 1000;
 
 const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
@@ -102,9 +104,11 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   const rerender = () => setTick((t) => t + 1);
 
   // Worst case you can lose in one round: last place pays Winner 1's prize,
-  // and with exactly 3 players last place pays both prizes.
+  // and with exactly 3 players last place pays both prizes. Being caught on 13
+  // cards costs double the Winner 1 prize, which is more than either.
   const players = numBots + 1;
-  const maxLoss = players === 3 ? bets.w1 + bets.w2 : bets.w1;
+  const placings = players === 3 ? bets.w1 + bets.w2 : bets.w1;
+  const maxLoss = Math.max(placings, bets.w1 * STUCK_MULTIPLIER);
   const canAfford = balance >= maxLoss;
   const ready = store !== null; // balance loaded — don't deal against a guess
 
@@ -121,6 +125,9 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     //            a bot gets the 2s to chop.
     //  counter — Bot Sok gets A-A-A-A; you get 2♥ (bait the quad out) and the
     //            9♥-K♥ straight flush to counter-chop it for double.
+    //  stuck   — you hold every card you need to go out in two tricks without
+    //            anyone else getting a play: lead the 3-to-A straight, everyone
+    //            passes, then lead 2♥. All three bots end on 13 cards.
     const sokId = numBots >= 2 ? 'bot1' : 'bot0';
     const rigged =
       practiceMode === 'bombs'
@@ -133,16 +140,44 @@ export default function SinglePlayer({ me, onExit, showToast }) {
               [YOU]: ['15-3', '9-3', '10-3', '11-3', '12-3', '13-3'],
               [sokId]: ['14-0', '14-1', '14-2', '14-3'],
             }
-          : null;
+          // stuck — you hold 3♠ (so you lead) plus a 3-to-A straight topping at
+          // A♥, the highest card any straight can hold, so nothing beats it and
+          // straights cannot be chopped. Everyone passes, you lead 2♥ last, and
+          // the bots go out on a full hand: thối 13 lá.
+          : practiceMode === 'stuck'
+            ? {
+                [YOU]: [
+                  '3-0', '4-0', '5-0', '6-0', '7-0', '8-0', '9-0',
+                  '10-0', '11-0', '12-0', '13-0', '14-3', '15-3',
+                ],
+              }
+            : null;
     gameRef.current = new TienLenGame(ids, rigged);
     bombsRef.current = [];
     setResult(null);
     setPhase('playing');
   };
 
-  const completeRound = (ranks, catchPay) => {
+  const completeRound = (ranks, catchPay, stuck) => {
     const n = ranks.length;
-    const deltas = Object.fromEntries(ranks.map((id) => [id, 0]));
+    const ids = gameRef.current ? gameRef.current.order : ranks;
+    const deltas = Object.fromEntries(ids.map((id) => [id, 0]));
+
+    // Stuck on 13 (thoi 13 la): everyone still holding a full hand pays the
+    // winner double the Winner 1 prize, and nothing else settles.
+    if (stuck?.length) {
+      for (const id of stuck) {
+        deltas[id] -= bets.w1 * STUCK_MULTIPLIER;
+        deltas[ranks[0]] += bets.w1 * STUCK_MULTIPLIER;
+      }
+      for (const id of ids) tallyRef.current[id] = (tallyRef.current[id] || 0) + deltas[id];
+      adjustCoins(deltas[YOU]);
+      setResult({ ranks, deltas, bombs: [], catch: null, stuck });
+      setCatchInfo(null);
+      setPhase('result');
+      return;
+    }
+
     deltas[ranks[n - 1]] -= bets.w1;
     deltas[ranks[0]] += bets.w1;
     if (bets.w2 > 0 && n >= 3) {
@@ -160,13 +195,14 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     }
     for (const id of ranks) tallyRef.current[id] += deltas[id];
     adjustCoins(deltas[YOU]);
-    setResult({ ranks, deltas, bombs: [...bombsRef.current], catch: catchPay || null });
+    setResult({ ranks, deltas, bombs: [...bombsRef.current], catch: catchPay || null, stuck: null });
     setCatchInfo(null);
     setPhase('result');
   };
 
   // Round over → offer the catch-the-2 gamble to the last winner first.
-  const finishRound = (ranks) => {
+  const finishRound = (ranks, stuck) => {
+    if (stuck?.length) return completeRound(ranks, null, stuck);
     if (bets.catch2 > 0 && ranks.length >= 2) {
       pendingRanksRef.current = ranks;
       const catcher = ranks[ranks.length - 2];
@@ -229,7 +265,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       });
       bombTimer.current = setTimeout(() => setBombEvent(null), 5000);
     }
-    if (res?.roundOver) finishRound(res.ranks);
+    if (res?.roundOver) finishRound(res.ranks, res.stuck);
     else rerender();
   };
 
@@ -351,6 +387,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
                 <option value="none">Off — random deal</option>
                 <option value="bombs">You get A-A-A-A + 3♥-7♥ flush, a bot gets 2s</option>
                 <option value="counter">Bot Sok gets A-A-A-A, you get 2♥ + 9♥-K♥ flush</option>
+                <option value="stuck">😱 Stuck on 13 — you get 3♠-A♥ straight + 2♥, bots never play</option>
               </select>
             </label>
             <p className="hint">
@@ -435,6 +472,15 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         <div className="payment-overlay">
           <div className="panel payment-panel">
             <h2>{result.ranks[0] === YOU ? '🏆 You won!' : 'Round finished'}</h2>
+            {result.stuck?.length > 0 && (
+              <div className="banner warn">
+                <strong>😱 Stuck on 13!</strong>{' '}
+                {result.stuck.map((id) => namesRef.current[id]).join(', ')} never played a
+                card, so the round ended at once and{' '}
+                {result.stuck.length === 1 ? 'pays' : 'each pays'} double to{' '}
+                {namesRef.current[result.ranks[0]]}.
+              </div>
+            )}
             <ol className="result-list">
               {result.ranks.map((id, i) => (
                 <li key={id}>

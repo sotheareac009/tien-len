@@ -10,11 +10,24 @@ export default function RoundResult({ room, isHost, onNext, onClose }) {
   const ranks = room.lastRanks || [];
   const deltaOf = (id) => room.players.find((p) => p.id === id)?.lastDelta ?? 0;
   const youWon = ranks[0] === room.you;
+  const stuck = room.lastStuck || [];
 
   return (
     <div className="payment-overlay">
       <div className="panel payment-panel">
         <h2>{youWon ? '🏆 You won!' : 'Round finished'}</h2>
+
+        {/* Caught on 13 cards: the round stopped the moment the winner went
+            out, so only the winner placed. Say why, or the missing 2nd and
+            3rd places look like a bug. */}
+        {stuck.length > 0 && (
+          <div className="banner warn">
+            <strong>😱 Stuck on 13!</strong>{' '}
+            {stuck.map((id) => nameOf(room, id)).join(', ')} never played a card, so the
+            round ended at once and {stuck.length === 1 ? 'they pay' : 'each pays'} double
+            to {nameOf(room, ranks[0])}.
+          </div>
+        )}
 
         <ol className="result-list">
           {ranks.map((id, i) => {
