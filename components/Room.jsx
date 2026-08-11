@@ -31,6 +31,8 @@ export default function Room({ me, room, showToast }) {
       clearTimeout(bombTimer.current);
       setBombEvent({
         key: Date.now(),
+        sound: 'chop',
+        multiplier: e.multiplier || 1,
         title: `💣 ${e.byName} chopped ${e.victimName}!${e.multiplier > 1 ? ` ×${e.multiplier}` : ''}`,
         amountText: e.amount > 0 ? `+${e.amount} pt` : null,
       });
@@ -40,6 +42,8 @@ export default function Room({ me, room, showToast }) {
       clearTimeout(bombTimer.current);
       setBombEvent({
         key: Date.now(),
+        sound: 'catch',
+        correct: e.correct,
         title: e.correct
           ? `🐷 ${e.catcherName} caught ${e.loserName}'s 2!`
           : `😅 No 2 — ${e.catcherName} pays ${e.loserName}`,
@@ -47,12 +51,26 @@ export default function Room({ me, room, showToast }) {
       });
       bombTimer.current = setTimeout(() => setBombEvent(null), 5000);
     };
+    // Stuck on 13 — the server already broadcasts this; nothing was showing it
+    // at the table until now, only the result screen afterwards.
+    const onStuck = (e) => {
+      clearTimeout(bombTimer.current);
+      setBombEvent({
+        key: Date.now(),
+        sound: 'penalty',
+        title: `😱 ${e.stuckNames.join(', ')} stuck on a full hand — ${e.winnerName} wins!`,
+        amountText: e.amount > 0 ? `${e.amount} pt each` : null,
+      });
+      bombTimer.current = setTimeout(() => setBombEvent(null), 5000);
+    };
     socket.on('game:bomb', onBomb);
     socket.on('game:catch2', onCatch2);
+    socket.on('game:stuck', onStuck);
     return () => {
       clearTimeout(bombTimer.current);
       socket.off('game:bomb', onBomb);
       socket.off('game:catch2', onCatch2);
+      socket.off('game:stuck', onStuck);
     };
   }, [socket]);
 

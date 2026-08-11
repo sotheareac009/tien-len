@@ -5,17 +5,20 @@ import { formatRiel, toRiel } from '@/lib/points';
 const signed = (n) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toLocaleString()}`;
 const cls = (n) => (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
 
-// Where everyone at this table stands. Points only move between players, so
-// the net column always sums to zero — "profit" here is one player's win being
-// another's loss, converted to riel at 1 pt = 1000៛.
+// Where everyone at this table stands, round by round and in total. Points only
+// move between players, so every column sums to zero — "profit" here is one
+// player's win being another's loss, converted to riel at 1 pt = 1000៛.
 export default function RoomSummary({ room }) {
   const rows = room.players
-    .map((p) => ({ id: p.id, name: p.name, net: p.tally || 0, points: p.points }))
+    .map((p) => ({ id: p.id, name: p.name, net: p.tally || 0, points: p.points, isBot: p.isBot }))
     .sort((a, b) => b.net - a.net);
 
   const won = rows.filter((r) => r.net > 0).reduce((s, r) => s + r.net, 0);
   const wallets = rows.filter((r) => typeof r.points === 'number');
   const onTable = wallets.reduce((s, r) => s + r.points, 0);
+
+  // Newest round first, so the last result is the one you see without scrolling.
+  const history = [...(room.history || [])].reverse();
 
   return (
     <div className="summary">
@@ -28,7 +31,7 @@ export default function RoomSummary({ room }) {
         <thead>
           <tr>
             <th>Player</th>
-            <th>Net</th>
+            <th>Total</th>
             <th>In riel</th>
             <th>Wallet</th>
           </tr>
@@ -44,7 +47,7 @@ export default function RoomSummary({ room }) {
               <td className={cls(r.net)}>
                 {r.net === 0 ? '—' : `${r.net > 0 ? '+' : '−'}${formatRiel(Math.abs(toRiel(r.net)))}`}
               </td>
-              <td>{typeof r.points === 'number' ? `${r.points.toLocaleString()} pt` : '—'}</td>
+              <td>{r.isBot ? '—' : typeof r.points === 'number' ? `${r.points.toLocaleString()} pt` : '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -58,9 +61,42 @@ export default function RoomSummary({ room }) {
         </tfoot>
       </table>
 
+      {history.length > 0 && (
+        <>
+          <h4 className="summary-sub">Round by round</h4>
+          <div className="summary-scroll">
+            <table className="summary-table rounds">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  {rows.map((r) => (
+                    <th key={r.id}>{r.name.split(' ')[0]}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.n}>
+                    <td>{h.n}</td>
+                    {rows.map((r) => {
+                      const v = h.net?.[r.id] || 0;
+                      return (
+                        <td key={r.id} className={cls(v)}>
+                          {v === 0 ? '—' : signed(v)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
       <p className="hint">
         1 pt = {formatRiel(1000)}. Winnings come straight out of the losers&apos; wallets —
-        the game takes no cut, so the net column adds up to zero.
+        the game takes no cut, so every round adds up to zero.
       </p>
     </div>
   );

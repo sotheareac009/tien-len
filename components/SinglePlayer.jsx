@@ -220,6 +220,14 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       // A penalty round resets the table: no winner carries the lead, so the
       // next deal drops the 3s again and the 3♠ leads.
       lastWinnerRef.current = null;
+      clearTimeout(bombTimer.current);
+      setBombEvent({
+        key: Date.now(),
+        sound: 'penalty',
+        title: `😱 ${stuck.map((id) => namesRef.current[id]).join(', ')} stuck on a full hand — ${namesRef.current[ranks[0]]} wins!`,
+        amountText: `${bets.w1 * STUCK_MULTIPLIER} 🪙 each`,
+      });
+      bombTimer.current = setTimeout(() => setBombEvent(null), 5000);
       setResult({ ranks, deltas, bombs: [], catch: null, stuck });
       setCatchInfo(null);
       setPhase('result');
@@ -286,6 +294,8 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     clearTimeout(bombTimer.current);
     setBombEvent({
       key: Date.now(),
+      sound: 'catch',
+      correct: hasTwo,
       title: hasTwo
         ? `🐷 ${namesRef.current[catcher]} caught ${namesRef.current[loser]}'s 2!`
         : `😅 No 2 — ${namesRef.current[catcher]} pays ${namesRef.current[loser]}`,
@@ -309,6 +319,8 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       clearTimeout(bombTimer.current);
       setBombEvent({
         key: Date.now(),
+        sound: 'chop',
+        multiplier,
         title: `💣 ${namesRef.current[res.bomb.by]} chopped ${namesRef.current[res.bomb.victim]}!${multiplier > 1 ? ` ×${multiplier}` : ''}`,
         amountText: amount > 0 ? `+${amount} 🪙` : null,
       });

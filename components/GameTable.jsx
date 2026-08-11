@@ -7,6 +7,7 @@ import { nameOf, RANK_LABELS } from './helpers';
 import { generateCombos } from '@/lib/game/bot';
 import { beats, detectCombo } from '@/lib/game/combos';
 import { cardValue } from '@/lib/game/cards';
+import { isMuted, setMuted, playChop, loadOperatorSounds } from '@/lib/sounds';
 
 const isBomb = (c) => c.type === 'quad' || (c.type === 'doubleSeq' && c.cards.length >= 8);
 
@@ -186,6 +187,20 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     hadTurn.current = mine;
   }, [myTurn, room.yourHand.length]);
 
+  // Sound preference lives in localStorage, so it survives a reload and is
+  // read on mount rather than during render (the server has no localStorage).
+  const [muted, setMutedState] = useState(true);
+  useEffect(() => {
+    setMutedState(isMuted());
+    loadOperatorSounds();
+  }, []);
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setMutedState(next);
+    if (!next) playChop(1); // confirm it works the moment you turn it on
+  };
+
   const suggest = () => {
     const suggestion = computeSuggestion();
     if (!suggestion) return showToast('Nothing can beat this — pass');
@@ -219,6 +234,14 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
             ? mustLead ? 'Your turn — you lead' : 'Your turn'
             : `${nameOf(room, room.currentTurnId)}'s turn`}
         </span>
+        <button
+          className="btn tiny"
+          onClick={toggleMute}
+          title={muted ? 'Sound off' : 'Sound on'}
+          aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
         {headerRight}
       </header>
 

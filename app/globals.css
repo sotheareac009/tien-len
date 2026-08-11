@@ -381,6 +381,19 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* Operator console: one section at a time, each with the full width. */
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.admin-tabs .btn { flex: 1; min-width: 150px; }
+.admin-section { flex: 1; }
+@media (max-width: 640px) {
+  .admin-tabs .btn { min-width: 0; flex: 1 1 45%; font-size: 0.85rem; padding: 10px 8px; }
+}
+
 .room-footer { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
 .btn.danger { border-color: rgba(224, 96, 96, 0.5); color: var(--danger); }
 .btn.danger:hover:not(:disabled) { background: rgba(224, 96, 96, 0.12); color: var(--danger); }
@@ -919,6 +932,20 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   border-top: 1px solid var(--panel-border-strong);
   color: var(--muted);
   font-weight: 700;
+}
+.summary-sub {
+  margin-top: 18px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+/* A long session scrolls inside the panel rather than stretching the room. */
+.summary-scroll { max-height: 260px; overflow-y: auto; margin-top: 6px; }
+.summary-table.rounds td, .summary-table.rounds th { padding: 5px 0; font-size: 0.8rem; }
+.summary-table.rounds th:first-child, .summary-table.rounds td:first-child {
+  color: var(--muted);
+  width: 2.2rem;
 }
 .summary-table .pos { color: var(--accent); font-weight: 700; }
 .summary-table .neg { color: var(--danger); font-weight: 700; }
