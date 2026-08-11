@@ -13,6 +13,7 @@ import RoundResult from './RoundResult';
 import BombBanner from './BombBanner';
 import Catch2Panel from './Catch2Panel';
 import Avatar from './Avatar';
+import VoiceChat from './VoiceChat';
 
 export default function Room({ me, room, showToast }) {
   const socket = getSocket();
@@ -86,6 +87,12 @@ export default function Room({ me, room, showToast }) {
   const saveRoom = () =>
     socket.emit('room:save', {}, (res) => res?.error && showToast(res.error));
 
+  // Voice sits outside the table/room switch below. Rendering it in both
+  // branches would unmount and rebuild it every time a round starts or ends,
+  // tearing down every peer connection and silently dropping everyone from the
+  // call — which looks like "only some people can be heard".
+  const voice = <VoiceChat room={room} showToast={showToast} floating />;
+
   if (room.status === 'playing') {
     return (
       <>
@@ -108,6 +115,7 @@ export default function Room({ me, room, showToast }) {
           }
         />
         <BombBanner event={bombEvent} />
+        {voice}
       </>
     );
   }
@@ -204,6 +212,7 @@ export default function Room({ me, room, showToast }) {
                     {placeOf(p.id) > 0 && (
                       <span className="chip rank">{RANK_LABELS[placeOf(p.id)]}</span>
                     )}
+                    {p.voice && <span className="chip voice" title="On voice chat">🎙</span>}
                   </span>
                   <span className="player-meta">
                     <span className={typeof p.points === 'number' && p.points < room.minPoints ? 'warn' : 'muted'}>
@@ -315,6 +324,8 @@ export default function Room({ me, room, showToast }) {
           onClose={() => setDismissedRound(roundKey)}
         />
       )}
+
+      {voice}
 
       {buying && wallet && (
         <BuyPoints

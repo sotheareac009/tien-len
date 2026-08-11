@@ -394,6 +394,30 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   .admin-tabs .btn { min-width: 0; flex: 1 1 45%; font-size: 0.85rem; padding: 10px 8px; }
 }
 
+.voice-controls { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.voice-controls .btn { margin-left: 0; }
+/* Pinned so it is reachable from the table and the room alike, and so the
+   component is never remounted by switching between them. */
+.voice-controls.floating {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 70;
+  max-width: min(92vw, 460px);
+  padding: 8px 10px;
+  background: rgba(12, 22, 16, 0.9);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-md);
+}
+.chip.voice {
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+  border-color: transparent;
+  color: #06130b;
+  padding: 2px 7px;
+}
+
 .room-footer { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
 .btn.danger { border-color: rgba(224, 96, 96, 0.5); color: var(--danger); }
 .btn.danger:hover:not(:disabled) { background: rgba(224, 96, 96, 0.12); color: var(--danger); }

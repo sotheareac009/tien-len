@@ -361,6 +361,7 @@ function OpponentSeat({ player, seatClass, isTurn, justPlayed, isOpener }) {
         <div className="seat-name">
           {player.name}
           {player.isBot && <span className="chip">bot</span>}
+          {player.voice && <span className="chip voice" title="On voice chat">🎙</span>}
           {!player.isBot && !player.connected && ' (offline)'}
         </div>
         {/* Finishing place only — 1st, 2nd, 3rd appear as each player goes
