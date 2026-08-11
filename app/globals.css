@@ -665,11 +665,15 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   border-radius: clamp(9px, 0.9vw, 13px);
   font-size: clamp(0.78rem, 1.05vw, 1.2rem);
 }
+/* Cards in the hand overlap to the left, so each one covers only its
+   neighbour's flipped bottom-right corner while every top-left rank stays
+   readable. Raising a lifted card above that natural order would cover the
+   NEXT card's top-left corner — hiding its rank — so lifted cards deliberately
+   carry no z-index. The lift, outline and glow are enough to pick them out. */
 .card.clickable { cursor: pointer; }
 .card.clickable:hover {
   transform: translateY(-8px);
   box-shadow: 0 10px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  z-index: 3;
 }
 .card.hinted {
   transform: translateY(-10px);
@@ -682,7 +686,6 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   outline: 3px solid var(--gold);
   outline-offset: -1px;
   box-shadow: 0 14px 26px rgba(0, 0, 0, 0.5), 0 0 20px rgba(233, 197, 101, 0.45);
-  z-index: 4;
 }
 .card.red { color: #c3262e; }
 .card.black { color: #1d1d24; }
@@ -921,7 +924,54 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
 .summary-table .neg { color: var(--danger); font-weight: 700; }
 
 /* ---------- mobile ---------- */
+/* ---------- responsive ---------- */
+
+/* Nothing may push the page sideways: a single overflowing table or card row
+   would let the whole layout scroll horizontally on a phone.
+   Deliberately NOT applied to .panel — it would outrank the max-width that
+   keeps dialogs like .payment-panel from stretching across the screen. */
+html, body { overflow-x: hidden; }
+.room-header, .banner { max-width: 100%; }
+
+/* The two-column room needs ~660px of content before the columns hit their
+   minimums, so collapse it well before that rather than overflowing. */
+@media (max-width: 900px) {
+  .room-grid { grid-template-columns: 1fr; }
+  .room-screen { padding: 18px; }
+}
+
+/* Tablets and large phones. */
+@media (max-width: 720px) {
+  .room-header { flex-wrap: wrap; justify-content: center; gap: 10px; text-align: center; }
+  .wallet-bar { margin: 0; width: 100%; }
+  .player-list li { flex-wrap: wrap; gap: 6px; }
+  .player-list .player-name { min-width: 0; overflow-wrap: anywhere; }
+  .summary-table { font-size: 0.82rem; }
+  .summary-table td:first-child { overflow-wrap: anywhere; }
+  .payment-panel { padding: 20px; }
+  .result-list li { flex-wrap: wrap; gap: 4px; }
+}
+
 @media (max-width: 640px) {
+  /* Mobile browser chrome eats into 100vh; dvh tracks the visible area, so the
+     hand and action buttons stay reachable instead of sitting under the bar. */
+  .game-screen { height: 100dvh; }
+  .payment-overlay { padding: 12px; align-items: flex-start; }
+  .payment-panel { max-height: 88dvh; }
+  .game-header { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+  .my-area { padding: 8px 10px 14px; }
+  .hand { padding: 14px 0 6px; min-height: 92px; }
+  .actions { gap: 8px; margin-top: 8px; }
+  /* The beaten play is context, not the combo to beat — shrink it hard so it
+     never crowds the current one on a small felt. */
+  .table-prev { transform: scale(0.55); margin-top: 4px; }
+  .table-prev-label { font-size: 0.75rem; }
+  .table-center { padding: 12px; }
+  .logo { font-size: 1.7rem; }
+  .center-screen { padding: 14px; }
+  .panel { padding: 20px; }
+  .room-footer .btn { flex: 1; min-width: 0; }
+  .topup-list li { padding: 10px; }
   .table-felt { border-radius: 48px; margin: 0 10px; min-height: 230px; }
   .table-felt::before { border-radius: 58px; }
   .seat { min-width: 96px; padding: 7px 10px 7px 7px; }
@@ -933,10 +983,23 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   .hand .card { margin-right: -16px; }
   .room-screen { padding: 14px; }
   .room-header { padding: 12px 14px; }
-  /* One column on a phone: players, then stakes, then the summary. */
-  .room-grid { grid-template-columns: 1fr; }
   .bomb-emoji { font-size: 4.5rem; }
   .bomb-title { font-size: 1.2rem; }
   .bomb-amount { font-size: 2.2rem; }
   .actions .btn { min-width: 0; flex: 1; }
+}
+
+/* Small phones (360-420px). Cards overlap harder so a full 13-card hand
+   still fits, and seats shrink to keep the felt usable. */
+@media (max-width: 420px) {
+  .card { width: 44px; height: 64px; }
+  .card .card-suit { font-size: 1.2rem; }
+  .hand .card { margin-right: -20px; }
+  .seat { min-width: 84px; padding: 6px 8px 6px 6px; }
+  .seat-name { font-size: 0.8rem; }
+  .room-screen { padding: 10px; }
+  .panel { padding: 16px; }
+  .logo { font-size: 1.5rem; }
+  .summary-table { font-size: 0.76rem; }
+  .btn { padding: 11px 14px; }
 }
