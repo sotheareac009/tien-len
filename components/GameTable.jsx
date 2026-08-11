@@ -10,6 +10,12 @@ import { cardValue } from '@/lib/game/cards';
 
 const isBomb = (c) => c.type === 'quad' || (c.type === 'doubleSeq' && c.cards.length >= 8);
 
+// Play assistance: the green highlighting, the pre-selected play when your turn
+// starts, and the 💡 Suggest button. Set NEXT_PUBLIC_SHOW_SUGGEST=false to turn
+// the lot off for a table that would rather work it out themselves. Read at
+// build time, so it must be set before `npm run build`.
+const SHOW_SUGGEST = process.env.NEXT_PUBLIC_SHOW_SUGGEST !== 'false';
+
 const COMBO_LABELS = {
   single: 'Single',
   pair: 'Pair',
@@ -112,7 +118,7 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   // Cards that can be part of at least one combo beating the table.
   // null = no highlighting (not your turn, or you lead and anything goes).
   const playableIds = useMemo(() => {
-    if (!myTurn || !tableCombo) return null;
+    if (!SHOW_SUGGEST || !myTurn || !tableCombo) return null;
     const ids = new Set();
     for (const combo of generateCombos(room.yourHand)) {
       if (beats(combo, tableCombo)) {
@@ -154,7 +160,8 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   // is one tap away; if nothing can beat, clear the selection (pass).
   useEffect(() => {
     if (!myTurn) return;
-    setSelected(computeSuggestion() ?? []);
+    // With assistance off, start every turn from an empty selection.
+    setSelected(SHOW_SUGGEST ? computeSuggestion() ?? [] : []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTurn, room.currentTurnId]);
 
@@ -307,9 +314,11 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
           <button className="btn" onClick={pass} disabled={!myTurn || mustLead}>
             Pass
           </button>
-          <button className="btn" onClick={suggest} disabled={!myTurn}>
-            💡 Suggest
-          </button>
+          {SHOW_SUGGEST && (
+            <button className="btn" onClick={suggest} disabled={!myTurn}>
+              💡 Suggest
+            </button>
+          )}
           <button className="btn ghost" onClick={() => setSelected([])} disabled={selected.length === 0}>
             Clear
           </button>

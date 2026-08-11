@@ -17,6 +17,19 @@ export default function RoundResult({ room, isHost, onNext, onClose }) {
       <div className="panel payment-panel">
         <h2>{youWon ? '🏆 You won!' : 'Round finished'}</h2>
 
+        {/* Dealt four 2s or four 3s: the round was decided before a card was
+            played, so there are no placings below the winner. */}
+        {room.instantWin && (
+          <div className="banner warn">
+            <strong>
+              {room.instantWin.kind === 'four2s' ? '2️⃣2️⃣2️⃣2️⃣' : '3️⃣3️⃣3️⃣3️⃣'} Instant win!
+            </strong>{' '}
+            {nameOf(room, room.instantWin.playerId)} was dealt four{' '}
+            {room.instantWin.kind === 'four2s' ? '2s' : '3s'}, so the round ended on the deal.
+            The pot is three times the Winner 1 prize, shared between everyone else.
+          </div>
+        )}
+
         {/* Caught on 13 cards: the round stopped the moment the winner went
             out, so only the winner placed. Say why, or the missing 2nd and
             3rd places look like a bug. */}

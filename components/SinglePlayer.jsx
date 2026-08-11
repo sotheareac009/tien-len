@@ -14,6 +14,9 @@ const START_COINS = 1000;
 const REFILL = 1000;
 // Caught holding all 13 cards costs double the Winner 1 prize.
 const STUCK_MULTIPLIER = 2;
+// Four 2s or four 3s wins on the deal: three times the Winner 1 prize in
+// total, shared between the other players.
+const INSTANT_WIN_MULTIPLIER = 3;
 const BOT_DELAY_MS = 1000;
 
 const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
@@ -109,7 +112,11 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   // cards costs double the Winner 1 prize, which is more than either.
   const players = numBots + 1;
   const placings = players === 3 ? bets.w1 + bets.w2 : bets.w1;
-  const maxLoss = Math.max(placings, bets.w1 * STUCK_MULTIPLIER);
+  const maxLoss = Math.max(
+    placings,
+    bets.w1 * STUCK_MULTIPLIER,
+    bets.w1 * INSTANT_WIN_MULTIPLIER
+  );
   const canAfford = balance >= maxLoss;
   const ready = store !== null; // balance loaded — don't deal against a guess
 
@@ -164,6 +171,29 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     bombsRef.current = [];
     setResult(null);
     setPhase('playing');
+
+    const iw = gameRef.current.instantWin;
+    if (iw) {
+      const others = ids.filter((id) => id !== iw.playerId);
+      const total = bets.w1 * INSTANT_WIN_MULTIPLIER;
+      const each = Math.floor(total / others.length);
+      const extra = total - each * others.length;
+      const deltas = Object.fromEntries(ids.map((id) => [id, 0]));
+      others.forEach((id, i) => {
+        const amount = each + (i < extra ? 1 : 0);
+        deltas[id] -= amount;
+        deltas[iw.playerId] += amount;
+      });
+      for (const id of ids) tallyRef.current[id] = (tallyRef.current[id] || 0) + deltas[id];
+      adjustCoins(deltas[YOU]);
+      lastWinnerRef.current = iw.playerId;
+      setResult({ ranks: [iw.playerId], deltas, bombs: [], catch: null, stuck: null, instantWin: iw });
+      setPhase('result');
+      showToast(
+        `${iw.kind === 'four2s' ? '2️⃣2️⃣2️⃣2️⃣' : '3️⃣3️⃣3️⃣3️⃣'} ${namesRef.current[iw.playerId]} was dealt four ${iw.kind === 'four2s' ? '2s' : '3s'} — instant win!`
+      );
+      return;
+    }
 
     const opener = gameRef.current.openLeader;
     showToast(
@@ -493,6 +523,16 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         <div className="payment-overlay">
           <div className="panel payment-panel">
             <h2>{result.ranks[0] === YOU ? '🏆 You won!' : 'Round finished'}</h2>
+            {result.instantWin && (
+              <div className="banner warn">
+                <strong>
+                  {result.instantWin.kind === 'four2s' ? '2️⃣2️⃣2️⃣2️⃣' : '3️⃣3️⃣3️⃣3️⃣'} Instant win!
+                </strong>{' '}
+                {namesRef.current[result.instantWin.playerId]} was dealt four{' '}
+                {result.instantWin.kind === 'four2s' ? '2s' : '3s'}, so the round ended on
+                the deal.
+              </div>
+            )}
             {result.stuck?.length > 0 && (
               <div className="banner warn">
                 <strong>😱 Stuck on 13!</strong>{' '}

@@ -63,6 +63,7 @@ build — `next build` reads them.
 | `SUPABASE_QR_BUCKET` | `khqr` |
 | `ADMIN_EMAILS` | your Google account email |
 | `NEXT_PUBLIC_SOCKET_TRANSPORT` | `polling` (Cloud Startup only — omit on a VPS) |
+| `NEXT_PUBLIC_SHOW_SUGGEST` | `false` to hide the play hints and Suggest button (optional) |
 
 Do **not** set `PORT`: Hostinger assigns it, and `server.js` reads
 `process.env.PORT`.
