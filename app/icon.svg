@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Tien Len">
+  <!-- Two fanned cards on the table's felt. The heart is deliberate: in Tien
+       Len hearts is the highest suit, so it is the game's winning mark.
+       Colours match the app's felt and gold in app/globals.css. -->
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c6a40"/>
+      <stop offset="1" stop-color="#0e3d23"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7dd94"/>
+      <stop offset="0.55" stop-color="#e9c565"/>
+      <stop offset="1" stop-color="#b78f35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="32" height="32" rx="7" fill="url(#felt)"/>
+
+  <!-- Back card, fanned right -->
+  <g transform="rotate(11 16 17)">
+    <rect x="7.5" y="5.5" width="17" height="21" rx="2.8"
+          fill="url(#gold)" stroke="#8d6d27" stroke-width="0.7"/>
+  </g>
+
+  <!-- Front card, fanned left -->
+  <g transform="rotate(-8 16 17)">
+    <rect x="7" y="5" width="17.5" height="21.5" rx="2.8"
+          fill="#fcfaf3" stroke="#b78f35" stroke-width="0.7"/>
+    <path d="M16 21.6C11.6 18.2 9.9 16.3 9.9 14.2C9.9 12.5 11.2 11.2 12.8 11.2C13.9 11.2 15.1 11.9 16 13.1C16.9 11.9 18.1 11.2 19.2 11.2C20.8 11.2 22.1 12.5 22.1 14.2C22.1 16.3 20.4 18.2 16 21.6Z"
+          fill="#cc2b3d"/>
+  </g>
+</svg>

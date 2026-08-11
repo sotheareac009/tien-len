@@ -10,7 +10,7 @@ Real-time multiplayer Tien Len (Tiến Lên / ទាញឡេន) built with **N
   - **Single player vs bots** — free, played with app coins. Pick 1–3 bot opponents, set the coin stakes per round. Signed-in players keep their balance on their account (Supabase), so it follows them to any device; guests keep theirs in the browser. Broke? Grab a free coin top-up. Guests are welcome here — no account, no real money.
 - **Points wallet**: players buy points from the operator by scanning **one KHQR you upload**, then submitting the transfer. Points are credited only once you approve the request in the operator console — there is no bank API that can confirm it automatically.
 - **Real-time multiplayer** (2–4 players) over Socket.IO — create a room, share the 5-letter code, play.
-- **Full Tien Len rules**: singles, pairs, triples, four-of-a-kind, straights, double sequences; 2s are highest; bombs chop 2s; lowest card (3♠) leads the first trick.
+- **Full Tien Len rules**: singles, pairs, triples, four-of-a-kind, straights, double sequences (2+ consecutive pairs); 2s are highest; bombs chop 2s; lowest card (3♠) leads the first trick.
 - **Stakes per round in points**: the host sets the **Winner 1** and **Winner 2** prizes, the bomb bonus, and the catch-2 price. Nobody is dealt in until their wallet covers the most they could lose.
 - **Automatic settlement**: when a round ends, points move straight between the players' wallets in a single database statement — last place pays the Winner 1 prize to 1st place, 3rd place pays the Winner 2 prize to 2nd (with 3 players, last place pays both). No "I've paid / confirm received" step, and no peer-to-peer transfers.
 - **Catch-the-2** 🐷 (configurable price): after the round, the last winner may gamble that the loser is still holding a 2 — right, the loser pays the price; wrong, the catcher pays the loser.
@@ -85,7 +85,7 @@ WebSocket caveat that comes with it), or a VPS.
 - 13 cards each; rank order `3 < 4 < … < K < A < 2`, suit order `♠ < ♣ < ♦ < ♥`.
 - Holder of the lowest dealt card leads the round and must include it in the first play.
 - A play must match the type and size of the combo on the table and be higher.
-- Bombs (house rules): a single 2 is beaten only by a quad or a 5-card straight flush (5+ consecutive cards in one suit); a pair of 2s is beaten only by a 4-pair double sequence; a quad is beaten by a 4-pair double sequence or a straight flush. Double sequences never chop a single 2, and 3-pair double sequences are not bombs at all. Chopping pays the configurable bomb bonus, with an escalating chain: chopping a 2 pays ×1, chopping a quad/bomb pays ×2, and each counter-chop (e.g. a higher straight flush over a chopping straight flush) doubles the previous profit (×4, ×8, …). The chain resets when the trick ends.
+- Bombs (house rules): a single 2 is beaten only by a quad or a 5-card straight flush (5+ consecutive cards in one suit); a pair of 2s is beaten only by a 4-pair double sequence; a quad is beaten by a 4-pair double sequence or a straight flush. Double sequences never chop a single 2, and 2- and 3-pair double sequences are not bombs at all. Chopping pays the configurable bomb bonus, with an escalating chain: chopping a 2 pays ×1, chopping a quad/bomb pays ×2, and each counter-chop (e.g. a higher straight flush over a chopping straight flush) doubles the previous profit (×4, ×8, …). The chain resets when the trick ends.
 - When everyone else passes, the trick winner leads a fresh trick.
 - Play continues until only one player has cards, producing a full 1st→last ranking.
 

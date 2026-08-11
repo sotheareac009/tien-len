@@ -559,7 +559,6 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
 .seat-name { font-size: 0.92rem; font-weight: 700; }
 .seat-info { margin-top: 3px; font-size: 0.82rem; display: flex; align-items: center; gap: 2px; }
 .seat-info .chip { margin-left: 0; }
-.card-back-count { color: #cfe8d8; font-weight: 600; }
 
 /* "Your turn" announcement — a quick banner plus a glow on your hand area
    so an active turn is impossible to miss. */
@@ -779,7 +778,22 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
 .payment-panel { max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; }
 .payment-panel h2 { margin-bottom: 14px; font-size: 1.3rem; font-weight: 800; }
 .result-list { list-style: none; margin-bottom: 16px; }
-.result-list li { padding: 5px 0; font-size: 0.95rem; font-weight: 500; }
+.result-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.result-list li:last-child { border-bottom: none; }
+.result-list li.is-you { font-weight: 700; }
+
+.transfer-list { list-style: none; margin-top: 8px; font-size: 0.88rem; color: var(--muted); }
+.transfer-list li { padding: 3px 0; }
+.transfer-list strong { color: var(--gold); }
 
 .debt {
   border: 1px solid var(--panel-border-strong);

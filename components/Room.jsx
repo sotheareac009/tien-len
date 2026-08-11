@@ -9,6 +9,7 @@ import BuyPoints from './BuyPoints';
 import SettingsEditor from './SettingsEditor';
 import GameTable from './GameTable';
 import RoomSummary from './RoomSummary';
+import RoundResult from './RoundResult';
 import BombBanner from './BombBanner';
 import Catch2Panel from './Catch2Panel';
 import Avatar from './Avatar';
@@ -19,6 +20,9 @@ export default function Room({ me, room, showToast }) {
   const isHost = room.hostId === room.you;
   const [bombEvent, setBombEvent] = useState(null);
   const [buying, setBuying] = useState(false);
+  // The result screen shows once per round; closing it must not bring it back
+  // on the next broadcast, so remember which round was dismissed.
+  const [dismissedRound, setDismissedRound] = useState(null);
   const [wallet, refreshWallet] = useWallet(true);
   const bombTimer = useRef(null);
 
@@ -92,6 +96,13 @@ export default function Room({ me, room, showToast }) {
 
   const startRound = () => socket.emit('game:start');
   const leaveRoom = () => socket.emit('room:leave');
+
+  // Identifies one specific round, so the result screen appears once per round
+  // and a new round brings it back.
+  const roundKey = room.lastRanks ? `${room.roundsPlayed}:${room.lastRanks.join(',')}` : null;
+  const showResult = !!roundKey && room.status === 'waiting' && dismissedRound !== roundKey;
+  // Finishing position from the last round, shown beside each player's name.
+  const placeOf = (id) => (room.lastRanks ? room.lastRanks.indexOf(id) + 1 : 0);
   const myPoints = self?.points ?? 0;
   const short = myPoints < (room.minPoints || 0);
 
@@ -157,6 +168,10 @@ export default function Room({ me, room, showToast }) {
                     <Avatar name={p.name} image={p.image} />
                     {p.name} {p.isHost && <span className="chip">host</span>}
                     {p.id === room.you && <span className="chip you">you</span>}
+                    {/* Where they finished the last round */}
+                    {placeOf(p.id) > 0 && (
+                      <span className="chip rank">{RANK_LABELS[placeOf(p.id)]}</span>
+                    )}
                   </span>
                   <span className="player-meta">
                     <span className={typeof p.points === 'number' && p.points < room.minPoints ? 'warn' : 'muted'}>
@@ -253,6 +268,18 @@ export default function Room({ me, room, showToast }) {
             ? 'This room and its seats are kept if the server restarts.'
             : 'Save the room to keep everyone’s seats and the current round across a restart.'}
         </p>
+      )}
+
+      {showResult && (
+        <RoundResult
+          room={room}
+          isHost={isHost}
+          onNext={() => {
+            setDismissedRound(roundKey);
+            startRound();
+          }}
+          onClose={() => setDismissedRound(roundKey)}
+        />
       )}
 
       {buying && wallet && (

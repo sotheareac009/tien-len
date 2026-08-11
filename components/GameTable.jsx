@@ -287,12 +287,17 @@ function OpponentSeat({ player, seatClass, isTurn, justPlayed }) {
           {player.name}
           {!player.connected && ' (offline)'}
         </div>
-        {/* <div className="seat-info">
-          {player.finishedRank
-            ? <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
-            : <span className="card-back-count">🂠 {player.cardCount}</span>}
-          {player.passed && <span className="chip pass">passed</span>}
-        </div> */}
+        {/* Finishing place only — 1st, 2nd, 3rd appear as each player goes
+            out. Hand sizes stay hidden. Rendered only when there is something
+            to say, so seats do not carry an empty row. */}
+        {(player.finishedRank || player.passed) && (
+          <div className="seat-info">
+            {player.finishedRank && (
+              <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
+            )}
+            {player.passed && <span className="chip pass">passed</span>}
+          </div>
+        )}
       </div>
     </div>
   );
