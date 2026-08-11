@@ -424,7 +424,7 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
 .banner .btn { vertical-align: middle; }
 
 /* ---------- game table ---------- */
-.game-screen { flex: 1; display: flex; flex-direction: column; height: 100vh; }
+.game-screen { flex: 1; display: flex; flex-direction: column; height: 100dvh; }
 .game-header {
   display: flex;
   justify-content: space-between;
@@ -439,7 +439,7 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
   flex: 1;
   margin: 4px 22px 0;
   border-radius: 160px;
-  min-height: 300px;
+  min-height: min(300px, 34vh);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -696,7 +696,7 @@ input::placeholder { color: rgba(151, 171, 157, 0.6); }
 /* Table cards — the focal point. Sized off the viewport so they're big on
    desktop and still fit on phones; inner type scales with the card via em. */
 .card.small {
-  width: clamp(58px, 8vw, 96px);
+  width: clamp(44px, min(8vw, 12vh), 96px);
   height: auto;
   aspect-ratio: 5 / 7;
   border-radius: clamp(9px, 0.9vw, 13px);
@@ -1004,9 +1004,6 @@ html, body { overflow-x: hidden; }
 }
 
 @media (max-width: 640px) {
-  /* Mobile browser chrome eats into 100vh; dvh tracks the visible area, so the
-     hand and action buttons stay reachable instead of sitting under the bar. */
-  .game-screen { height: 100dvh; }
   .payment-overlay { padding: 12px; align-items: flex-start; }
   .payment-panel { max-height: 88dvh; }
   .game-header { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
@@ -1053,4 +1050,123 @@ html, body { overflow-x: hidden; }
   .logo { font-size: 1.5rem; }
   .summary-table { font-size: 0.76rem; }
   .btn { padding: 11px 14px; }
+}
+
+/* ---------- short screens (landscape phones, small laptops) ---------- */
+/* Driven by height, not width: a landscape phone is wide but very short, and
+   the width breakpoints above never fire for it. */
+@media (max-height: 760px) {
+  .game-header { padding: 8px 14px; }
+  .table-felt { margin: 2px 12px 0; border-radius: 80px; border-width: 6px; }
+  .table-center { padding: 46px 8px 8px; }
+  .seat { min-width: 0; padding: 6px 10px 6px 6px; gap: 3px; }
+  .seat-avatar { width: 28px; height: 28px; font-size: 0.75rem; }
+  .seat-name { font-size: 0.82rem; }
+  .seat-top { top: 8px; }
+  .seat-left { left: 8px; }
+  .seat-right { right: 8px; }
+  .my-area { padding: 6px 12px 12px; }
+  .hand { padding: 8px 0 2px; min-height: 0; }
+  .actions { margin-top: 6px; }
+  .actions .btn { padding: 9px 12px; }
+  .table-prev { transform: scale(0.5); margin-top: 0; }
+
+  /* Dialogs — the round result, buy points, catch-the-2. Same story as the
+     cards: sized for a tall screen, so on a short one the panel runs past the
+     bottom and the main button falls off. */
+  .payment-overlay { padding: 10px; align-items: flex-start; }
+  .payment-panel { padding: 16px 18px; max-height: 94dvh; }
+  .payment-panel h2 { font-size: 1.05rem; margin-bottom: 8px; }
+  .payment-panel .stack { gap: 8px; margin-top: 12px; }
+  .payment-panel .btn.big { margin-top: 10px; padding: 11px; font-size: 0.95rem; }
+  .payment-panel .hint { margin-top: 6px; font-size: 0.75rem; }
+  .payment-panel .banner { padding: 8px 10px; font-size: 0.8rem; margin-bottom: 10px; }
+  .result-list { margin-bottom: 10px; }
+  .result-list li { padding: 5px 0; font-size: 0.86rem; }
+  .qr-preview { width: 130px; height: 130px; margin: 8px auto; }
+
+  /* Cards in hand, and the name above them. Both were still at desktop size
+     here: the width breakpoints never fire on a wide-but-short screen. */
+  .card { width: 48px; height: 68px; border-radius: 8px; }
+  .card .card-suit { font-size: 1.25rem; }
+  .card .card-rank { font-size: 0.76rem; }
+  .card .card-pip { font-size: 0.6rem; }
+  .hand .card { margin-right: -15px; }
+  .my-status { margin-bottom: 2px; }
+  .my-status .player-name { font-size: 0.88rem; }
+  .my-status .chip { font-size: 0.6rem; padding: 1px 7px; }
+}
+
+@media (max-height: 560px) {
+  .table-felt { min-height: 0; border-radius: 60px; }
+
+  /* A landscape phone is short but wide, so the beaten play moves alongside
+     the current one rather than being dropped. Stacking them vertically is
+     what ran out of room, not the cards themselves. */
+  .table-center {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-items: center;
+    column-gap: 2px;
+  }
+  .table-center > .table-combo { grid-column: 2; grid-row: 1; }
+  .table-center > .table-label { grid-column: 2; grid-row: 2; }
+  .table-center > .table-prev {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    transform: scale(0.46);
+    transform-origin: center right;
+    margin: 0;
+  }
+  /* "New trick — leader plays anything" is on its own; let it use both. */
+  .table-center > .table-label.empty { grid-column: 1 / -1; grid-row: 1; }
+  .table-center { padding: 38px 6px 6px; }
+  .table-label { font-size: 0.78rem; padding: 4px 10px; }
+  .seat-name { font-size: 0.76rem; }
+  .seat-avatar { width: 24px; height: 24px; }
+  .turn-flash { font-size: 1.1rem; }
+  .game-header { padding: 6px 10px; font-size: 0.85rem; }
+  .voice-controls.floating { padding: 5px 7px; gap: 5px; }
+  .voice-controls.floating .btn { padding: 5px 8px; font-size: 0.7rem; }
+
+  .payment-panel { padding: 12px 14px; }
+  .payment-panel h2 { font-size: 0.95rem; margin-bottom: 6px; }
+  .result-list li { padding: 3px 0; font-size: 0.8rem; }
+  .payment-panel .btn.big { padding: 9px; font-size: 0.9rem; margin-top: 8px; }
+  .payment-panel .stack { gap: 6px; margin-top: 8px; }
+  .transfer-list, .payment-panel .hint { font-size: 0.72rem; }
+
+  .card { width: 42px; height: 60px; border-radius: 7px; }
+  .card .card-suit { font-size: 1.05rem; }
+  .card .card-rank { font-size: 0.68rem; }
+  .hand .card { margin-right: -17px; }
+  .my-status .player-name { font-size: 0.8rem; }
+  .actions .btn { padding: 8px 10px; font-size: 0.85rem; }
+}
+
+/* ---------- narrow portrait (phones held upright) ---------- */
+@media (max-width: 480px) {
+  /* The side seats sat at the vertical middle, right across the played combo
+     and its label. On a tall narrow felt there is room to lift them clear. */
+  .seat-left, .seat-right { top: 30%; }
+  .seat { min-width: 0; padding: 6px 10px 6px 6px; gap: 3px; }
+  .seat-name { font-size: 0.8rem; }
+  .seat-avatar { width: 28px; height: 28px; font-size: 0.75rem; }
+
+  .table-felt { margin: 2px 8px 0; border-radius: 44px; border-width: 7px; }
+  /* Clear the top seat above and the side seats either side. */
+  .table-center { padding: 54px 6px 6px; }
+
+  /* Four buttons will not fit across a phone — "Suggest" was being clipped.
+     Two rows of two, using the empty felt space rather than truncating. */
+  .actions { flex-wrap: wrap; gap: 8px; }
+  .actions .btn { flex: 1 1 calc(50% - 8px); min-width: 0; font-size: 0.9rem; }
+
+  /* Keep the hand and buttons clear of the iOS home indicator. */
+  .my-area { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+
+  /* Announce the turn above the play instead of on top of it. */
+  .turn-flash { top: 13%; }
+  .turn-flash span { font-size: 1.1rem; padding: 10px 24px; }
 }
