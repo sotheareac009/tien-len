@@ -40,6 +40,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   const tallyRef = useRef({ [YOU]: 0 });
   const bombsRef = useRef([]); // { from, to, amount } chops this round
   const pendingRanksRef = useRef(null);
+  const lastWinnerRef = useRef(null); // leads the next round
   const bombTimer = useRef(null);
   const catchTimer = useRef(null);
 
@@ -152,10 +153,24 @@ export default function SinglePlayer({ me, onExit, showToast }) {
                 ],
               }
             : null;
-    gameRef.current = new TienLenGame(ids, rigged);
+    // Rounds after the first are led by whoever won the last one, with no
+    // restriction on what they open with.
+    // The 'stuck' deal needs you leading a full hand, so it opts out of the
+    // automatic 3♠ drop by naming you the starter.
+    const starterId = practiceMode === 'stuck' ? YOU : lastWinnerRef.current;
+    gameRef.current = new TienLenGame(ids, rigged, {
+      starterId: ids.includes(starterId) ? starterId : null,
+    });
     bombsRef.current = [];
     setResult(null);
     setPhase('playing');
+
+    const opener = gameRef.current.openLeader;
+    showToast(
+      opener
+        ? `🂡 ${namesRef.current[opener]} had the 3♠ — they lead the round`
+        : `🏆 ${namesRef.current[starterId] || 'You'} won last round — they lead`
+    );
   };
 
   const completeRound = (ranks, catchPay, stuck) => {
@@ -172,6 +187,9 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       }
       for (const id of ids) tallyRef.current[id] = (tallyRef.current[id] || 0) + deltas[id];
       adjustCoins(deltas[YOU]);
+      // A penalty round resets the table: no winner carries the lead, so the
+      // next deal drops the 3s again and the 3♠ leads.
+      lastWinnerRef.current = null;
       setResult({ ranks, deltas, bombs: [], catch: null, stuck });
       setCatchInfo(null);
       setPhase('result');
@@ -195,6 +213,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     }
     for (const id of ranks) tallyRef.current[id] += deltas[id];
     adjustCoins(deltas[YOU]);
+    lastWinnerRef.current = ranks[0];
     setResult({ ranks, deltas, bombs: [...bombsRef.current], catch: catchPay || null, stuck: null });
     setCatchInfo(null);
     setPhase('result');
@@ -323,6 +342,8 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       prevTable: g.prevTable
         ? { type: g.prevTable.type, cards: g.prevTable.cards, playerId: g.prevTable.playerId }
         : null,
+      discarded: g.discarded?.length ? g.discarded : null,
+      openedBy: g.openLeader ?? null,
       currentTurnId: g.over ? null : g.currentPlayerId(),
       yourHand: g.hand(YOU),
       debts: [],

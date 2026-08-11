@@ -62,6 +62,20 @@ export default function RoundResult({ room, isHost, onNext, onClose }) {
           </div>
         )}
 
+        {/* Explain the placings that cost or paid nothing, so a bot finishing
+            above you doesn't look like points went missing. */}
+        {room.players.some((p) => p.isBot) && (
+          <p className="hint">
+            🤖 {room.players.filter((p) => p.isBot).map((p) => p.name).join(' and ')}{' '}
+            {room.players.filter((p) => p.isBot).length === 1 ? 'is a bot' : 'are bots'} and
+            hold no wallet
+            {ranks[0] && room.players.find((p) => p.id === ranks[0])?.isBot
+              ? ' — winning the round earned them nothing, and cost you nothing.'
+              : ' — nothing was won from them or paid to them.'}{' '}
+            Only the players were ranked against each other.
+          </p>
+        )}
+
         <p className="hint">Points moved between wallets automatically.</p>
 
         <div className="stack">

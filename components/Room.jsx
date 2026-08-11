@@ -134,6 +134,20 @@ export default function Room({ me, room, showToast }) {
 
       {room.settleError && <div className="banner warn">{room.settleError}</div>}
 
+      {/* Bots fill short tables, and they hold no wallet. Say so plainly
+          before the deal, so nobody expects to win points off one. */}
+      {room.status === 'waiting' && room.botsNextRound > 0 && (
+        <div className="banner">
+          <strong>🤖 {room.botsNextRound} bot{room.botsNextRound === 1 ? '' : 's'} will join
+          this round</strong> to make up a 4-player table.{' '}
+          <span className="muted">
+            Bots play for free: you win nothing from a bot, and a bot takes nothing from you.
+            Points move only between the {room.players.filter((p) => !p.isBot).length} of you —
+            exactly as they would without the bots.
+          </span>
+        </div>
+      )}
+
       {/* A round frozen by someone dropping out. Nobody can play until the
           host continues, so a reload never costs anyone a trick. */}
       {room.status === 'paused' && (
@@ -175,7 +189,9 @@ export default function Room({ me, room, showToast }) {
                   </span>
                   <span className="player-meta">
                     <span className={typeof p.points === 'number' && p.points < room.minPoints ? 'warn' : 'muted'}>
-                      {typeof p.points === 'number' ? `${p.points.toLocaleString()} pt` : '—'}
+                      {p.isBot
+                        ? 'no wallet'
+                        : typeof p.points === 'number' ? `${p.points.toLocaleString()} pt` : '—'}
                     </span>
                     <span className={`tally ${p.tally > 0 ? 'pos' : p.tally < 0 ? 'neg' : ''}`}>
                       {p.tally > 0 ? '+' : p.tally < 0 ? '−' : ''}{Math.abs(p.tally).toLocaleString()} pt

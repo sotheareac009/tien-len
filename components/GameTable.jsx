@@ -158,6 +158,18 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTurn, room.currentTurnId]);
 
+  // Who opened the round sticks around under their name for a minute — the
+  // toast goes by too quickly to catch. Keyed on the round as well as the
+  // player, so it reappears when the same person opens twice in a row.
+  const [showOpener, setShowOpener] = useState(false);
+  useEffect(() => {
+    if (!room.openedBy) return setShowOpener(false);
+    setShowOpener(true);
+    const t = setTimeout(() => setShowOpener(false), 60000);
+    return () => clearTimeout(t);
+  }, [room.openedBy, room.roundsPlayed]);
+  const openerOf = (id) => showOpener && room.openedBy === id;
+
   // Announce your turn with a short banner so it's impossible to miss.
   const [turnFlash, setTurnFlash] = useState(0);
   const hadTurn = useRef(false);
@@ -211,6 +223,7 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
             seatClass={seatMap[i]}
             isTurn={room.currentTurnId === p.id}
             justPlayed={playAnim.playerId === p.id}
+            isOpener={openerOf(p.id)}
           />
         ))}
 
@@ -244,12 +257,30 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
           ) : (
             <div className="table-label empty">New trick — leader plays anything</div>
           )}
+
+          {/* The 3s taken out of every hand as the round opened. Shown so the
+              missing cards are accounted for rather than just absent. */}
+          {room.discarded && (
+            <div className="table-prev">
+              <span className="table-prev-label">
+                {room.openedBy
+                  ? `3s discarded — ${nameOf(room, room.openedBy)} had the 3♠ and leads`
+                  : '3s discarded at the deal'}
+              </span>
+              <div className="table-combo">
+                {room.discarded.map((c) => (
+                  <CardView key={c.id} card={c} small />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="my-area">
         <div className={`my-status ${myTurn ? 'active' : ''}`}>
           <span className="player-name">{me.name}</span>
+          {openerOf(room.you) && <span className="chip rank">🂡 had 3♠ · leads</span>}
           {room.players[youIdx]?.finishedRank && (
             <span className="chip rank">{RANK_LABELS[room.players[youIdx].finishedRank]}</span>
           )}
@@ -288,7 +319,7 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   );
 }
 
-function OpponentSeat({ player, seatClass, isTurn, justPlayed }) {
+function OpponentSeat({ player, seatClass, isTurn, justPlayed, isOpener }) {
   return (
     <div
       className={`seat ${seatClass} ${isTurn ? 'active' : ''} ${justPlayed ? 'just-played' : ''} ${player.connected ? '' : 'offline'}`}
@@ -297,13 +328,15 @@ function OpponentSeat({ player, seatClass, isTurn, justPlayed }) {
       <div className="seat-body">
         <div className="seat-name">
           {player.name}
-          {!player.connected && ' (offline)'}
+          {player.isBot && <span className="chip">bot</span>}
+          {!player.isBot && !player.connected && ' (offline)'}
         </div>
         {/* Finishing place only — 1st, 2nd, 3rd appear as each player goes
             out. Hand sizes stay hidden. Rendered only when there is something
             to say, so seats do not carry an empty row. */}
-        {(player.finishedRank || player.passed) && (
+        {(player.finishedRank || player.passed || isOpener) && (
           <div className="seat-info">
+            {isOpener && <span className="chip rank">🂡 3♠</span>}
             {player.finishedRank && (
               <span className="chip rank">{RANK_LABELS[player.finishedRank]}</span>
             )}
