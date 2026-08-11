@@ -284,6 +284,9 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         };
       }),
       table: g.table ? { type: g.table.type, cards: g.table.cards, playerId: g.table.playerId } : null,
+      prevTable: g.prevTable
+        ? { type: g.prevTable.type, cards: g.prevTable.cards, playerId: g.prevTable.playerId }
+        : null,
       currentTurnId: g.over ? null : g.currentPlayerId(),
       yourHand: g.hand(YOU),
       debts: [],

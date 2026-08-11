@@ -228,6 +228,18 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
               <div key={`lbl-${playAnim.key}`} className="table-label pop">
                 {COMBO_LABELS[room.table.type] || room.table.type} by {nameOf(room, room.table.playerId)}
               </div>
+              {/* What the current play beat, so you can see what was just
+                  taken without having to remember it. */}
+              {room.prevTable && (
+                <div className="table-prev">
+                  <span className="table-prev-label">beat {nameOf(room, room.prevTable.playerId)}</span>
+                  <div className={`table-combo ${room.prevTable.cards.length >= 6 ? 'dense' : ''}`}>
+                    {room.prevTable.cards.map((c) => (
+                      <CardView key={c.id} card={c} small />
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="table-label empty">New trick — leader plays anything</div>
