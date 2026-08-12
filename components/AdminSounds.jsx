@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { previewSound, loadOperatorSounds } from '@/lib/sounds';
 
 const KINDS = [
+  ['card', '🂡 Card played', 'Played every time a card or combo lands on the table.'],
   ['chop', '💥 Bomb chop', 'Played when a bomb chops another play and the bonus is collected.'],
   ['catch', '🐷 Catch-the-2', 'Played on the catch-the-2 reveal.'],
   ['penalty', '😱 Stuck on 13', 'Played when someone is caught holding a full hand and pays double.'],
@@ -23,6 +25,7 @@ export default function AdminSounds({ onNote }) {
 
   useEffect(() => {
     load();
+    loadOperatorSounds(); // so a preview uses the uploaded file, not the built-in
   }, [load]);
 
   const upload = async (kind, e) => {
@@ -38,6 +41,25 @@ export default function AdminSounds({ onNote }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       onNote('Sound updated — players hear it on their next page load');
+      await load();
+    } catch (err) {
+      onNote(err.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Off entirely — not replaced, just never played.
+  const silence = async (kind) => {
+    setBusy(kind);
+    try {
+      const form = new FormData();
+      form.append('kind', kind);
+      form.append('mode', 'silence');
+      const res = await fetch('/api/admin/sound', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not silence');
+      onNote('Silenced — players stop hearing it on their next page load');
       await load();
     } catch (err) {
       onNote(err.message);
@@ -74,18 +96,23 @@ export default function AdminSounds({ onNote }) {
           <li key={kind}>
             <div className="topup-head">
               <strong>{label}</strong>
-              <span className="muted">{sounds[kind] ? 'custom' : 'built-in'}</span>
+              <span className="muted">
+                {sounds[kind] === 'off' ? 'silenced' : sounds[kind] ? 'custom' : 'built-in'}
+              </span>
             </div>
             <div className="topup-body">
               <span className="muted">{description}</span>
             </div>
 
-            {sounds[kind] && (
+            {sounds[kind] && sounds[kind] !== 'off' && (
               // Lets you check the file actually plays before a round relies on it.
               <audio controls src={sounds[kind]} style={{ width: '100%', marginBottom: 10 }} />
             )}
 
             <div className="row">
+              <button className="btn" onClick={() => previewSound(kind)}>
+                ▶ Play
+              </button>
               <button
                 className="btn"
                 disabled={busy === kind}
@@ -96,6 +123,11 @@ export default function AdminSounds({ onNote }) {
               {sounds[kind] && (
                 <button className="btn ghost" disabled={busy === kind} onClick={() => clear(kind)}>
                   Use built-in
+                </button>
+              )}
+              {sounds[kind] !== 'off' && (
+                <button className="btn ghost" disabled={busy === kind} onClick={() => silence(kind)}>
+                  Silence
                 </button>
               )}
             </div>

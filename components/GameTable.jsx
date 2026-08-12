@@ -7,7 +7,7 @@ import { nameOf, RANK_LABELS } from './helpers';
 import { generateCombos } from '@/lib/game/bot';
 import { beats, detectCombo } from '@/lib/game/combos';
 import { cardValue } from '@/lib/game/cards';
-import { isMuted, setMuted, playChop, loadOperatorSounds } from '@/lib/sounds';
+import { isMuted, setMuted, playChop, playCard, loadOperatorSounds } from '@/lib/sounds';
 
 const isBomb = (c) => c.type === 'quad' || (c.type === 'doubleSeq' && c.cards.length >= 8);
 
@@ -60,12 +60,17 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
   // the seat of whoever played it so everyone can see who moved.
   const tableSig = room.table ? room.table.cards.map((c) => c.id).join(',') : '';
   const [playAnim, setPlayAnim] = useState({ key: 0, dir: 'bottom', playerId: null });
+  // Skip the very first run: rejoining a room mid-trick would otherwise play a
+  // card sound for a combo that landed before you arrived.
+  const seenFirstTable = useRef(false);
   useEffect(() => {
     if (!room.table) {
       // Trick ended — drop the highlight so it can't stick on a seat.
       setPlayAnim((a) => (a.playerId ? { ...a, playerId: null } : a));
       return;
     }
+    if (seenFirstTable.current) playCard();
+    seenFirstTable.current = true;
     setPlayAnim({ key: Date.now(), dir: dirOf(room.table.playerId), playerId: room.table.playerId });
     const t = setTimeout(() => setPlayAnim((a) => ({ ...a, playerId: null })), 1300);
     return () => clearTimeout(t);

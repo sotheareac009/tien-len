@@ -4,6 +4,7 @@ Drop audio files here to replace the built-in synthesised effects:
 
 | File | Played when |
 | --- | --- |
+| `card.mp3` | a card or combo lands on the table |
 | `chop.mp3` | a bomb chops another play |
 | `catch.mp3` | the catch-the-2 reveal |
 | `penalty.mp3` | someone is caught stuck on a full hand |

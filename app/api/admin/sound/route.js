@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 
 // Which effects the operator can replace, and the setting each is stored under.
 const KINDS = {
+  card: 'sound_card_url',
   chop: 'sound_chop_url',
   catch: 'sound_catch_url',
   penalty: 'sound_penalty_url',
@@ -46,6 +47,16 @@ export async function POST(req) {
   const kind = String(form.get('kind') || '');
   const file = form.get('sound');
   if (!KINDS[kind]) return Response.json({ error: 'Unknown sound' }, { status: 400 });
+
+  // No file, just a request to silence this one effect. Stored as the literal
+  // 'off' so it is distinguishable from "no custom sound" (null).
+  if (form.get('mode') === 'silence') {
+    if (!(await setSetting(KINDS[kind], 'off'))) {
+      return Response.json({ error: 'Could not save' }, { status: 500 });
+    }
+    return Response.json({ ok: true, kind, url: 'off' });
+  }
+
   if (!file || typeof file === 'string') {
     return Response.json({ error: 'No file uploaded' }, { status: 400 });
   }

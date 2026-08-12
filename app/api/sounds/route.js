@@ -6,11 +6,14 @@ export const dynamic = 'force-dynamic';
 // these are just URLs to files in a public bucket, and the client needs them
 // whether or not anyone is signed in.
 export async function GET() {
-  if (!dbEnabled()) return Response.json({ chop: null, catch: null, penalty: null });
-  const [chop, catch_, penalty] = await Promise.all([
+  if (!dbEnabled()) {
+    return Response.json({ card: null, chop: null, catch: null, penalty: null });
+  }
+  const [card, chop, catch_, penalty] = await Promise.all([
+    getSetting('sound_card_url'),
     getSetting('sound_chop_url'),
     getSetting('sound_catch_url'),
     getSetting('sound_penalty_url'),
   ]);
-  return Response.json({ chop, catch: catch_, penalty });
+  return Response.json({ card, chop, catch: catch_, penalty });
 }
