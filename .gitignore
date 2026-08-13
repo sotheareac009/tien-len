@@ -5,3 +5,6 @@ public/uploads/*
 .env
 .DS_Store
 .next-test/
+
+# Throwaway test scripts
+*.tmp.mjs
