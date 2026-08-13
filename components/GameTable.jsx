@@ -127,12 +127,12 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     if (!SHOW_SUGGEST || !myTurn || !tableCombo) return null;
     const ids = new Set();
     for (const combo of generateCombos(room.yourHand)) {
-      if (beats(combo, tableCombo)) {
+      if (beats(combo, tableCombo, { noTwosLeft: room.noTwosLeft })) {
         for (const card of combo.cards) ids.add(card.id);
       }
     }
     return ids;
-  }, [myTurn, tableCombo, room.yourHand]);
+  }, [myTurn, tableCombo, room.yourHand, room.noTwosLeft]);
 
   // Best play right now, or null when nothing can beat the table.
   const computeSuggestion = () => {
@@ -140,7 +140,7 @@ export default function GameTable({ me, room, showToast, onPlay, onPass, title, 
     const combos = generateCombos(room.yourHand);
     let candidates;
     if (tableCombo) {
-      candidates = combos.filter((c) => beats(c, tableCombo));
+      candidates = combos.filter((c) => beats(c, tableCombo, { noTwosLeft: room.noTwosLeft }));
       if (candidates.length === 0) return null;
       // Cheapest option first; keep bombs as a last resort.
       candidates.sort(

@@ -389,6 +389,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         ? { type: g.prevTable.type, cards: g.prevTable.cards, playerId: g.prevTable.playerId }
         : null,
       discarded: g.discarded?.length ? g.discarded : null,
+      noTwosLeft: g.noTwosLeftFor(YOU),
       openedBy: g.openLeader ?? null,
       currentTurnId: g.over ? null : g.currentPlayerId(),
       yourHand: g.hand(YOU),
