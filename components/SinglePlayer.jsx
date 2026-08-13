@@ -18,6 +18,9 @@ const STUCK_MULTIPLIER = 2;
 // total, shared between the other players.
 const INSTANT_WIN_MULTIPLIER = 3;
 const BOT_DELAY_MS = 1000;
+// Once you are out, the rest of the round is just bots sorting out the places
+// below you. Nothing is left to watch, so they play it out quickly.
+const BOT_DELAY_DONE_MS = 300;
 
 const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
 
@@ -337,6 +340,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     if (!g || g.over) return;
     const current = g.currentPlayerId();
     if (current === YOU) return;
+    const youAreOut = g.hand(YOU).length === 0;
     const t = setTimeout(() => {
       const move = chooseMove(g, current);
       let res = move ? g.play(current, move) : g.pass(current);
@@ -345,7 +349,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         res = g.table ? g.pass(current) : g.play(current, [g.hand(current)[0].id]);
       }
       afterMove(res);
-    }, BOT_DELAY_MS);
+    }, youAreOut ? BOT_DELAY_DONE_MS : BOT_DELAY_MS);
     return () => clearTimeout(t);
   });
 
