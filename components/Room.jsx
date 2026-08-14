@@ -12,6 +12,7 @@ import RoomSummary from './RoomSummary';
 import RoundResult from './RoundResult';
 import BombBanner from './BombBanner';
 import Catch2Panel from './Catch2Panel';
+import RevealPanel from './RevealPanel';
 import Avatar from './Avatar';
 import VoiceChat from './VoiceChat';
 
@@ -156,6 +157,7 @@ export default function Room({ me, room, showToast }) {
       </header>
 
       {room.status === 'catch2' && room.catch2 && <Catch2Panel room={room} />}
+      {room.reveal && <RevealPanel reveal={room.reveal} />}
       <BombBanner event={bombEvent} />
 
       {room.settleError && <div className="banner warn">{room.settleError}</div>}

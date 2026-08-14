@@ -5,6 +5,7 @@ import { TienLenGame } from '@/lib/game/TienLenGame';
 import { chooseMove } from '@/lib/game/bot';
 import GameTable from './GameTable';
 import BombBanner from './BombBanner';
+import RevealPanel from './RevealPanel';
 import { RANK_LABELS } from './helpers';
 
 const YOU = 'you';
@@ -21,6 +22,8 @@ const BOT_DELAY_MS = 1000;
 // Once you are out, the rest of the round is just bots sorting out the places
 // below you. Nothing is left to watch, so they play it out quickly.
 const BOT_DELAY_DONE_MS = 300;
+// How long the loser's hand stays face-up after the catch-the-2 decision.
+const REVEAL_MS = 5000;
 
 const coins = (n) => `${Number(n).toLocaleString()} 🪙`;
 
@@ -40,6 +43,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
   const [result, setResult] = useState(null);  // { ranks, deltas, bombs, catch }
   const [bombEvent, setBombEvent] = useState(null);
   const [catchInfo, setCatchInfo] = useState(null); // { catcher, loser, loserCount }
+  const [reveal, setReveal] = useState(null); // loser's hand, shown briefly
   const [, setTick] = useState(0);
   const gameRef = useRef(null);
   const namesRef = useRef({});
@@ -173,6 +177,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     });
     bombsRef.current = [];
     setResult(null);
+    setReveal(null);
     setPhase('playing');
 
     const iw = gameRef.current.instantWin;
@@ -287,10 +292,24 @@ export default function SinglePlayer({ me, onExit, showToast }) {
     const loser = ranks[ranks.length - 1];
     if (!didCatch) {
       if (catcher !== YOU) showToast(`${namesRef.current[catcher]} skipped the catch`);
-      completeRound(ranks, null);
+      const skippedHand = gameRef.current.hand(loser);
+      setCatchInfo(null);
+      setReveal({
+        name: namesRef.current[loser],
+        catcherName: namesRef.current[catcher],
+        cards: skippedHand,
+        hadTwo: skippedHand.some((c) => c.rank === 15),
+        caught: false,
+      });
+      clearTimeout(catchTimer.current);
+      catchTimer.current = setTimeout(() => {
+        setReveal(null);
+        completeRound(ranks, null);
+      }, REVEAL_MS);
       return;
     }
-    const hasTwo = gameRef.current.hand(loser).some((c) => c.rank === 15);
+    const loserHand = gameRef.current.hand(loser);
+    const hasTwo = loserHand.some((c) => c.rank === 15);
     const catchPay = hasTwo
       ? { from: loser, to: catcher, amount: bets.catch2, correct: true }
       : { from: catcher, to: loser, amount: bets.catch2, correct: false };
@@ -305,11 +324,21 @@ export default function SinglePlayer({ me, onExit, showToast }) {
       amountText: bets.catch2 > 0 ? `+${bets.catch2} 🪙` : null,
     });
     bombTimer.current = setTimeout(() => setBombEvent(null), 5000);
-    // Close the catch modal and let the reveal play on the table before
-    // the result screen covers it.
+    // Turn the loser's hand face-up so everyone can see the answer, then
+    // settle once it has been on screen long enough to read.
     setCatchInfo(null);
+    setReveal({
+      name: namesRef.current[loser],
+      catcherName: namesRef.current[catcher],
+      cards: loserHand,
+      hadTwo: hasTwo,
+      caught: true,
+    });
     clearTimeout(catchTimer.current);
-    catchTimer.current = setTimeout(() => completeRound(ranks, catchPay), 3500);
+    catchTimer.current = setTimeout(() => {
+      setReveal(null);
+      completeRound(ranks, catchPay);
+    }, REVEAL_MS);
   };
 
   const afterMove = (res) => {
@@ -509,6 +538,7 @@ export default function SinglePlayer({ me, onExit, showToast }) {
         }
       />
       <BombBanner event={bombEvent} />
+      {reveal && <RevealPanel reveal={reveal} />}
       {phase === 'catch2' && catchInfo && (
         <div className="payment-overlay">
           <div className="panel payment-panel">
